@@ -73,7 +73,9 @@ module Lapiz
 
   def http_call(method, pattern, params, &block)
     if block.nil?
-      return send(method, pattern, params[:body], params[:headers])
+      return send(method, pattern, params[:body], params[:headers]) if Rails::VERSION::MAJOR < 5
+
+      return send(method, pattern, params: params[:body], headers: params[:headers])
     end
 
     it "tests action '#{pattern}'", self  do |group|
@@ -91,9 +93,15 @@ module Lapiz
 
           body = args[:body] || @_params[:body]
 
-          expect {
-            self.send(@_method, path, body, @_params[:headers])
-          }.to_not raise_error
+          if Rails::VERSION::MAJOR < 5
+            expect {
+              self.send(@_method, path, body, @_params[:headers])
+            }.to_not raise_error
+          else
+            expect {
+              self.send(@_method, path, params: body, headers: @_params[:headers])
+            }.to_not raise_error
+          end
         end
       end
 
